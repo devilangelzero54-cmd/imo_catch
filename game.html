@@ -24,18 +24,16 @@
       overflow: hidden;
       background: #000;
       color: #fff;
-      padding-top: 40px;
     }
 
     /* 背景：横幅100%で上下は黒帯になる想定 */
     .bg-game {
       position: absolute;
+      top: 40px;
       left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%,);
       width: 100vw;
       height: auto;
-      max-height: 100vh;
       z-index: 0;
       pointer-events: none;
     }
@@ -72,7 +70,7 @@
     /* キャラ */
     .character {
       position: absolute;
-      bottom: 10%;        /* 背景の中で少し上に浮かせる */
+      bottom: 14%;        /* 背景の中で少し上に浮かせる */
       left: 50%;
       transform: translateX(-50%);
       width: 28vh;        /* ゲーム用はタイトルより小さめ */
@@ -86,7 +84,7 @@
     /* 左右ボタン */
     .ctrl-btn {
       position: absolute;
-      bottom: 4%;
+      bottom: 8%;
       width: 64px;
       height: 48px;
       border-radius: 12px;
