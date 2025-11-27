@@ -28,16 +28,16 @@
 
     /* 背景：横幅100%で上下は黒帯になる想定 */
     .bg-game {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: 100vw;
-      height: auto;
-      max-height: 100vh;
-      z-index: 0;
-      pointer-events: none;
-    }
+  position: absolute;
+  top: 40px;         /* ★ ここを調整するのがポイント */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  height: auto;
+  max-height: calc(100vh - 40px);
+  z-index: 0;
+  pointer-events: none;
+}
 
     /* 上のスコア・タイム帯 */
     .hud {
