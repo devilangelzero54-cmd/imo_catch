@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>めいっ狐のお芋キャッチ - タイトル</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: #000;
+      overflow: hidden;
+      font-family: "Noto Sans JP", sans-serif;
+      text-align: center;
+    }
+
+    /* 背景 */
+    #bg {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+    }
+
+    /* タイトル文字 */
+    h1 {
+      position: fixed;
+      top: 40px;
+      width: 100%;
+      text-align: center;
+      color: #ffeef6;
+      font-size: 24px;
+      text-shadow: 0 0 6px #ff9ccb;
+      z-index: 10;
+    }
+
+    /* キャラ画像 */
+    #character {
+      position: fixed;
+      bottom: 120px;
+      left: 50%;
+      width: 260px;   /* 調整OK */
+      transform: translateX(-50%);
+      z-index: 20;
+      transition: transform 0.6s linear;
+    }
+
+    /* 反転（左向き） */
+    .flip {
+      transform: translateX(-50%) scaleX(-1);
+    }
+
+    /* 芋（落下） */
+    #imo {
+      position: fixed;
+      top: -120px;
+      left: 50%;
+      width: 80px;
+      transform: translateX(-50%);
+      z-index: 5;
+      transition: top 0.9s linear;
+      display: none;
+    }
+
+    /* Start ボタン */
+    #startBtn {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 20px;
+      background: #ff8cb8;
+      border: none;
+      border-radius: 10px;
+      font-size: 18px;
+      color: #fff;
+      box-shadow: 0 0 8px #ff8cb8;
+      display: none;
+      z-index: 100;
+    }
+
+    #startBtn:active {
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+
+  <img id="bg" src="images/background/title_bg.png" alt="bg">
+  <h1>めいっ狐のお芋キャッチ</h1>
+
+  <img id="character" src="images/character/normal.png" alt="meikko">
+
+  <img id="imo" src="images/item/imo_normal.png">
+
+  <button id="startBtn">ゲームスタート</button>
+
+  <script>
+    const char = document.getElementById("character");
+    const imo = document.getElementById("imo");
+    const startBtn = document.getElementById("startBtn");
+
+    async function sleep(ms) {
+      return new Promise(r => setTimeout(r, ms));
+    }
+
+    async function startAnimation() {
+
+      // ① 右へ移動
+      char.style.transform = "translateX(30%)";
+      await sleep(800);
+
+      // ② 左へ移動（反転）
+      char.classList.add("flip");
+      char.style.transform = "translateX(-130%)";
+      await sleep(800);
+
+      // ③ 中央へ戻る（反転解除）
+      char.classList.remove("flip");
+      char.style.transform = "translateX(-50%)";
+      await sleep(700);
+
+      // ④ 芋を落とす
+      imo.style.display = "block";
+      await sleep(50);
+      imo.style.top = "350px"; // キャラの頭あたり
+      await sleep(900);
+
+      // ⑤ キャッチ → 表情変化
+      char.src = "images/character/surprised.png";
+      await sleep(600);
+      char.src = "images/character/smirk.png";
+
+      // ⑥ Startボタン表示
+      startBtn.style.display = "block";
+    }
+
+    startAnimation();
+
+    // ボタン → ゲームへ
+    startBtn.addEventListener("click", () => {
+      location.href = "game.html";
+    });
+  </script>
+
+</body>
+</html>
