@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>めいっ狐のお芋キャッチ - ゲーム</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: #000;
+      font-family: "Noto Sans JP", system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+      overflow: hidden;
+    }
+
+    .game-wrap {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #000;
+      color: #fff;
+    }
+
+    /* 背景：横幅100%で上下は黒帯になる想定 */
+    .bg-game {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 100vw;
+      height: auto;
+      max-height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* 上のスコア・タイム帯 */
+    .hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 8px 14px;
+      background: #000;
+      color: #fff;
+      font-size: 1rem;
+      display: flex;
+      justify-content: space-between;
+      z-index: 5;
+    }
+    .hud span {
+      letter-spacing: 0.15rem;
+    }
+
+    /* 落ちてくるオブジェクト */
+    .fall-item {
+      position: absolute;
+      width: 8vh;
+      max-width: 80px;
+      z-index: 3;
+      pointer-events: none;
+      user-select: none;
+      touch-action: none;
+    }
+
+    /* キャラ */
+    .character {
+      position: absolute;
+      bottom: 10%;        /* 背景の中で少し上に浮かせる */
+      left: 50%;
+      transform: translateX(-50%);
+      width: 28vh;        /* ゲーム用はタイトルより小さめ */
+      max-width: 230px;
+      z-index: 4;
+      pointer-events: none;
+      user-select: none;
+      touch-action: none;
+    }
+
+    /* 左右ボタン */
+    .ctrl-btn {
+      position: absolute;
+      bottom: 4%;
+      width: 64px;
+      height: 48px;
+      border-radius: 12px;
+      border: none;
+      background: rgba(0, 0, 0, 0.55);
+      color: #fff;
+      font-size: 1.6rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 6;
+      cursor: pointer;
+      user-select: none;
+      touch-action: manipulation;
+    }
+    .ctrl-btn.left {
+      left: 6%;
+    }
+    .ctrl-btn.right {
+      right: 6%;
+    }
+    .ctrl-btn:active {
+      background: rgba(255, 131, 183, 0.85);
+    }
+
+    /* ポップアップスコア */
+    .popup {
+      position: absolute;
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.1rem;
+      text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+      z-index: 7;
+      pointer-events: none;
+      animation: popFade 0.6s ease-out forwards;
+    }
+    @keyframes popFade {
+      0%   { transform: translateY(0);   opacity: 1; }
+      100% { transform: translateY(-20px); opacity: 0; }
+    }
+
+    /* 結果オーバーレイ */
+    .result-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    .result-card {
+      background: rgba(20, 20, 20, 0.9);
+      padding: 16px 16px 20px;
+      border-radius: 16px;
+      text-align: center;
+      max-width: 90vw;
+    }
+    .result-card img {
+      width: 80vw;
+      max-width: 320px;
+      border-radius: 12px;
+      display: block;
+      margin: 0 auto 12px;
+    }
+    .result-score {
+      font-size: 1.3rem;
+      margin-bottom: 10px;
+    }
+    .result-buttons {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+    .result-buttons button {
+      flex: 1;
+      min-width: 120px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: none;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-retry {
+      background: #ff83b7;
+      color: #fff;
+    }
+    .btn-title {
+      background: #fff;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-wrap" id="gameWrap">
+    <!-- 背景 -->
+    <img src="images/game_bg.png" alt="背景" class="bg-game" />
+
+    <!-- HUD -->
+    <div class="hud">
+      <span id="scoreText">score 0000</span>
+      <span id="timeText">残り時間 30</span>
+    </div>
+
+    <!-- キャラ -->
+    <img
+      id="character"
+      src="images/normal.png"
+      alt="めいっ狐"
+      class="character"
+    />
+
+    <!-- 左右移動ボタン -->
+    <button class="ctrl-btn left" id="btnLeft">&lt;</button>
+    <button class="ctrl-btn right" id="btnRight">&gt;</button>
+
+    <!-- 結果画面 -->
+    <div class="result-overlay" id="resultOverlay">
+      <div class="result-card">
+        <img src="images/clear.png" alt="クリア画像" />
+        <div class="result-score" id="resultScore">score 0000</div>
+        <div class="result-buttons">
+          <button class="btn-retry" id="btnRetry">もう一回</button>
+          <button class="btn-title" id="btnTitle">タイトルへ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**********************************************
+     * 基本設定（ここをいじれば調整しやすいゾーン）
+     **********************************************/
+    const GAME_TIME = 30;                 // 制限時間（秒）
+    const CHAR_SPEED = 280;              // キャラの移動速度(px / 秒)
+
+    const SCORE_NORMAL = 10;             // 通常芋
+    const SCORE_GOLD = 50;               // 金芋
+    const SCORE_LEAF = -10;              // 落ち葉ボール
+
+    const STUN_DURATION = 600;           // ヒット時の硬直(ms)
+
+    const IMG_CHAR_NORMAL = "images/normal.png";
+    const IMG_CHAR_HIT = "images/surprised_bad.png";
+
+    const IMG_IMO_NORMAL = "images/imo_normal.png";
+    const IMG_IMO_GOLD = "images/imo_gold.png";
+    const IMG_LEAF = "images/leaf_bad.png";
+
+    /**********************************************
+     * DOM取得
+     **********************************************/
+    const gameWrap = document.getElementById("gameWrap");
+    const charImg = document.getElementById("character");
+    const scoreText = document.getElementById("scoreText");
+    const timeText = document.getElementById("timeText");
+    const btnLeft = document.getElementById("btnLeft");
+    const btnRight = document.getElementById("btnRight");
+    const resultOverlay = document.getElementById("resultOverlay");
+    const resultScore = document.getElementById("resultScore");
+    const btnRetry = document.getElementById("btnRetry");
+    const btnTitle = document.getElementById("btnTitle");
+
+    /**********************************************
+     * 状態管理
+     **********************************************/
+    let gameStarted = false;
+    let gameOver = false;
+
+    let score = 0;
+    let remainingTime = GAME_TIME;
+    let lastTime = null;
+
+    let moveDir = 0;             // -1: 左 / 1: 右 / 0: 停止
+    let isStunned = false;
+    let stunTimeoutId = null;
+
+    let charX;                   // 画面上のキャラ中心X(px)
+
+    let spawnTimer = 0;          // オブジェクト出現までの残り時間(ms)
+    const objects = [];          // {el, x, y, vy, type}
+
+    /**********************************************
+     * 便利関数
+     **********************************************/
+    function clamp(v, min, max) {
+      return Math.max(min, Math.min(max, v));
+    }
+
+    function updateHud() {
+      const s = String(score).padStart(4, "0");
+      scoreText.textContent = `score ${s}`;
+      timeText.textContent = `残り時間 ${Math.ceil(remainingTime)}`;
+    }
+
+    function createPopup(x, y, text) {
+      const div = document.createElement("div");
+      div.className = "popup";
+      div.textContent = text;
+      div.style.left = x + "px";
+      div.style.top = y + "px";
+      document.body.appendChild(div);
+      setTimeout(() => div.remove(), 650);
+    }
+
+    function getCharBounds() {
+      const rect = charImg.getBoundingClientRect();
+      // カゴのあたりだけ少し狭めて使う
+      const width = rect.width;
+      const height = rect.height;
+      const basketTop = rect.top + height * 0.4;
+      const basketBottom = rect.bottom - height * 0.05;
+      const basketLeft = rect.left + width * 0.15;
+      const basketRight = rect.right;
+      return {
+        top: basketTop,
+        bottom: basketBottom,
+        left: basketLeft,
+        right: basketRight,
+      };
+    }
+
+    /**********************************************
+     * オブジェクト出現
+     **********************************************/
+    function spawnObject(deltaMs) {
+      if (spawnTimer > 0) {
+        spawnTimer -= deltaMs;
+        return;
+      }
+
+      // 経過時間で難易度を変える
+      const elapsed = GAME_TIME - remainingTime;
+
+      // 落下速度(px/s)
+      let vy;
+      // 出現間隔(ms)
+      let nextInterval;
+      // 種類
+      let type;
+
+      if (elapsed < 10) {
+        // 序盤：通常芋のみ
+        type = "normal";
+        vy = 110 + Math.random() * 40;      // 110〜150
+        nextInterval = 900 + Math.random() * 300; // 0.9〜1.2秒
+      } else if (elapsed < 20) {
+        // 中盤：通常＋金芋
+        const r = Math.random();
+        if (r < 0.25) {
+          type = "gold";
+        } else {
+          type = "normal";
+        }
+        vy = 130 + Math.random() * 60;      // 130〜190
+        nextInterval = 800 + Math.random() * 250;
+      } else {
+        // 終盤：通常＋金芋＋落ち葉ボール
+        const r = Math.random();
+        if (r < 0.25) {
+          type = "gold";
+        } else if (r < 0.5) {
+          type = "leaf";
+        } else {
+          type = "normal";
+        }
+        vy = 160 + Math.random() * 90;      // 160〜250
+        nextInterval = 650 + Math.random() * 220;
+      }
+
+      // DOM要素作成
+      const el = document.createElement("img");
+      el.className = "fall-item";
+      if (type === "normal") {
+        el.src = IMG_IMO_NORMAL;
+      } else if (type === "gold") {
+        el.src = IMG_IMO_GOLD;
+      } else {
+        el.src = IMG_LEAF;
+      }
+
+      // 画面横幅からランダムなX
+      const w = window.innerWidth;
+      const margin = 20;
+      const x = margin + Math.random() * (w - margin * 2);
+      const y = -80;
+
+      el.style.left = x + "px";
+      el.style.top = y + "px";
+
+      document.body.appendChild(el);
+
+      objects.push({ el, x, y, vy, type });
+      spawnTimer = nextInterval;
+    }
+
+    /**********************************************
+     * キャラ移動
+     **********************************************/
+    function updateCharacter(dt) {
+      if (!gameStarted || gameOver) return;
+
+      const rect = charImg.getBoundingClientRect();
+      const charWidth = rect.width || 200;
+      const margin = 24;
+      const minX = margin + charWidth / 2;
+      const maxX = window.innerWidth - margin - charWidth / 2;
+
+      if (!isStunned && moveDir !== 0) {
+        charX += moveDir * CHAR_SPEED * dt;
+        charX = clamp(charX, minX, maxX);
+        charImg.style.left = charX + "px";
+      }
+    }
+
+    /**********************************************
+     * オブジェクト更新＆当たり判定
+     **********************************************/
+    function updateObjects(dt) {
+      const toRemove = [];
+      const charBounds = getCharBounds();
+      const screenH = window.innerHeight;
+
+      for (let i = 0; i < objects.length; i++) {
+        const obj = objects[i];
+        obj.y += obj.vy * dt;
+        obj.el.style.top = obj.y + "px";
+
+        const rect = obj.el.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        let collided = false;
+
+        // キャッチ判定（カゴの範囲）
+        if (
+          centerX >= charBounds.left &&
+          centerX <= charBounds.right &&
+          centerY >= charBounds.top &&
+          centerY <= charBounds.bottom
+        ) {
+          collided = true;
+        }
+
+        if (collided) {
+          // スコア処理
+          if (obj.type === "normal") {
+            score += SCORE_NORMAL;
+            createPopup(centerX, centerY, `+${SCORE_NORMAL}`);
+          } else if (obj.type === "gold") {
+            score += SCORE_GOLD;
+            createPopup(centerX, centerY, `+${SCORE_GOLD}`);
+          } else if (obj.type === "leaf") {
+            score += SCORE_LEAF;
+            createPopup(centerX, centerY, `${SCORE_LEAF}`);
+            // ビックリ顔＆硬直
+            if (!isStunned) {
+              isStunned = true;
+              charImg.src = IMG_CHAR_HIT;
+              if (stunTimeoutId) clearTimeout(stunTimeoutId);
+              stunTimeoutId = setTimeout(() => {
+                isStunned = false;
+                charImg.src = IMG_CHAR_NORMAL;
+              }, STUN_DURATION);
+            }
+          }
+
+          // 使い終わったので削除対象
+          toRemove.push(i);
+        } else if (obj.y > screenH + 100) {
+          // 画面外に落ちたら削除
+          toRemove.push(i);
+        }
+      }
+
+      // 後ろから削除
+      for (let i = toRemove.length - 1; i >= 0; i--) {
+        const idx = toRemove[i];
+        const obj = objects[idx];
+        obj.el.remove();
+        objects.splice(idx, 1);
+      }
+    }
+
+    /**********************************************
+     * ゲームループ
+     **********************************************/
+    function gameLoop(timestamp) {
+      if (!gameStarted || gameOver) return;
+
+      if (lastTime == null) {
+        lastTime = timestamp;
+        requestAnimationFrame(gameLoop);
+        return;
+      }
+
+      const deltaMs = timestamp - lastTime;
+      const dt = deltaMs / 1000;
+      lastTime = timestamp;
+
+      // 時間更新
+      remainingTime -= dt;
+      if (remainingTime <= 0) {
+        remainingTime = 0;
+        updateHud();
+        endGame();
+        return;
+      }
+
+      // 生成＆更新
+      spawnObject(deltaMs);
+      updateCharacter(dt);
+      updateObjects(dt);
+      updateHud();
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    /**********************************************
+     * ゲーム開始／終了
+     **********************************************/
+    function startGame() {
+      if (gameStarted) return;
+      gameStarted = true;
+      remainingTime = GAME_TIME;
+      score = 0;
+      updateHud();
+
+      // キャラ初期位置：中央
+      const rect = charImg.getBoundingClientRect();
+      const charWidth = rect.width || 200;
+      const minX = 24 + charWidth / 2;
+      const maxX = window.innerWidth - 24 - charWidth / 2;
+      charX = (minX + maxX) / 2;
+      charImg.style.left = charX + "px";
+
+      lastTime = null;
+      spawnTimer = 500; // 最初の芋は少し遅れて落ちてくる
+      requestAnimationFrame(gameLoop);
+    }
+
+    function endGame() {
+      if (gameOver) return;
+      gameOver = true;
+
+      // 落ちているオブジェクト片付け
+      objects.forEach((obj) => obj.el.remove());
+      objects.length = 0;
+
+      const s = String(score).padStart(4, "0");
+      resultScore.textContent = `score ${s}`;
+      resultOverlay.style.display = "flex";
+    }
+
+    /**********************************************
+     * 入力処理（左右ボタン）
+     **********************************************/
+    function setMoveDir(dir) {
+      if (isStunned) {
+        moveDir = 0;
+      } else {
+        moveDir = dir;
+      }
+    }
+
+    function setupButtonHold(btn, dir) {
+      // マウス
+      btn.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        setMoveDir(dir);
+      });
+      window.addEventListener("mouseup", () => {
+        setMoveDir(0);
+      });
+
+      // タッチ
+      btn.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        setMoveDir(dir);
+      }, { passive: false });
+
+      ["touchend", "touchcancel"].forEach((ev) => {
+        window.addEventListener(ev, () => {
+          setMoveDir(0);
+        });
+      });
+    }
+
+    setupButtonHold(btnLeft, -1);
+    setupButtonHold(btnRight, 1);
+
+    /**********************************************
+     * 結果ボタン
+     **********************************************/
+    btnRetry.addEventListener("click", () => {
+      // ページをリロードしてリセット
+      window.location.reload();
+    });
+
+    btnTitle.addEventListener("click", () => {
+      // タイトル画面へ戻る（ファイル名はトミー側のタイトルhtmlに合わせて変更してOK）
+      window.location.href = "index.html";
+    });
+
+    /**********************************************
+     * 起動
+     **********************************************/
+    window.addEventListener("load", () => {
+      // 読み込み完了と同時にゲーム開始
+      startGame();
+    });
+  </script>
+</body>
+</html>
