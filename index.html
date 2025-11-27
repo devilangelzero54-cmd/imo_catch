@@ -88,12 +88,12 @@
 </head>
 <body>
 
-  <img id="bg" src="images/background/title_bg.png" alt="bg">
+  <img id="bg" src="images/title_bg.png" alt="bg">
   <h1>めいっ狐のお芋キャッチ</h1>
 
-  <img id="character" src="images/character/normal.png" alt="meikko">
+  <img id="character" src="images/normal.png" alt="meikko">
 
-  <img id="imo" src="images/item/imo_normal.png">
+  <img id="imo" src="images/imo_normal.png">
 
   <button id="startBtn">ゲームスタート</button>
 
@@ -129,9 +129,9 @@
       await sleep(900);
 
       // ⑤ キャッチ → 表情変化
-      char.src = "images/character/surprised.png";
+      char.src = "images/surprised.png";
       await sleep(600);
-      char.src = "images/character/smirk.png";
+      char.src = "images/smirk.png";
 
       // ⑥ Startボタン表示
       startBtn.style.display = "block";
