@@ -1,22 +1,33 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>めいっ狐のお芋キャッチ - タイトル</title>
-
   <style>
-    body {
+    * {
+      box-sizing: border-box;
       margin: 0;
+      padding: 0;
+    }
+
+    body {
       background: #000;
+      font-family: "Noto Sans JP", system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
       overflow: hidden;
-      font-family: "Noto Sans JP", sans-serif;
-      text-align: center;
+    }
+
+    .title-wrap {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
     }
 
     /* 背景 */
-    #bg {
-      position: fixed;
+    .bg {
+      position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
@@ -25,125 +36,236 @@
     }
 
     /* タイトル文字 */
-    h1 {
-      position: fixed;
-      top: 40px;
+    .title-text {
+      position: absolute;
+      top: 8%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.6rem;
+      letter-spacing: 0.3rem;
+      color: #ffe7f5;
+      text-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+      z-index: 2;
+      white-space: nowrap;
+    }
+
+    /* キャラ */
+    .character {
+      position: absolute;
+      bottom: 22%;          /* 画面下から少し浮かせる */
+      left: 50%;
+      transform: translateX(-50%);
+      width: 34vh;          /* 画面の高さ基準で調整（スマホでも安定） */
+      max-width: 260px;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    /* 芋（タイトル演出用） */
+    .imo {
+      position: absolute;
+      width: 8vh;
+      max-width: 80px;
+      top: -15vh;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* スタートボタン */
+    .start-btn {
+      position: absolute;
+      left: 50%;
+      bottom: 8%;
+      transform: translateX(-50%);
+      padding: 12px 40px;
+      border-radius: 999px;
+      border: none;
+      font-size: 1.1rem;
+      font-weight: 600;
+      background: #ff83b7;
+      color: #fff;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+      cursor: pointer;
+      z-index: 4;
+      display: none; /* 演出が終わるまで非表示 */
+    }
+
+    .start-btn:active {
+      transform: translateX(-50%) translateY(1px);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    /* クレジット */
+    .credit {
+      position: absolute;
+      bottom: 2%;
       width: 100%;
       text-align: center;
-      color: #ffeef6;
-      font-size: 24px;
-      text-shadow: 0 0 6px #ff9ccb;
-      z-index: 10;
-    }
-
-    /* キャラ画像 */
-    #character {
-      position: fixed;
-      bottom: 120px;
-      left: 50%;
-      width: 260px;   /* 調整OK */
-      transform: translateX(-50%);
-      z-index: 20;
-      transition: transform 0.6s linear;
-    }
-
-    /* 反転（左向き） */
-    .flip {
-      transform: translateX(-50%) scaleX(-1);
-    }
-
-    /* 芋（落下） */
-    #imo {
-      position: fixed;
-      top: -120px;
-      left: 50%;
-      width: 80px;
-      transform: translateX(-50%);
-      z-index: 5;
-      transition: top 0.9s linear;
-      display: none;
-    }
-
-    /* Start ボタン */
-    #startBtn {
-      position: fixed;
-      bottom: 40px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 10px 20px;
-      background: #ff8cb8;
-      border: none;
-      border-radius: 10px;
-      font-size: 18px;
-      color: #fff;
-      box-shadow: 0 0 8px #ff8cb8;
-      display: none;
-      z-index: 100;
-    }
-
-    #startBtn:active {
-      opacity: 0.8;
+      font-size: 0.75rem;
+      color: #fff9;
+      text-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
+      z-index: 4;
     }
   </style>
 </head>
 <body>
+  <div class="title-wrap">
+    <img src="images/title_bg.png" alt="背景" class="bg" />
 
-  <img id="bg" src="images/title_bg.png" alt="bg">
-  <h1>めいっ狐のお芋キャッチ</h1>
+    <div class="title-text">めいっ狐のお芋キャッチ</div>
 
-  <img id="character" src="images/normal.png" alt="meikko">
+    <!-- キャラ（最初は通常顔） -->
+    <img
+      id="character"
+      src="images/normal.png"
+      alt="めいっ狐"
+      class="character"
+    />
 
-  <img id="imo" src="images/imo_normal.png">
+    <!-- 落ちてくる芋 -->
+    <img id="imo" src="images/imo_normal.png" alt="お芋" class="imo" />
 
-  <button id="startBtn">ゲームスタート</button>
+    <!-- スタートボタン -->
+    <button class="start-btn" id="startBtn">ゲームスタート</button>
+
+    <div class="credit">
+      ※ 画像生成：PixAI / キャラクター：姪っ狐　※ 補助：ChatGPT
+    </div>
+  </div>
 
   <script>
-    const char = document.getElementById("character");
-    const imo = document.getElementById("imo");
+    const charImg = document.getElementById("character");
+    const imoImg = document.getElementById("imo");
     const startBtn = document.getElementById("startBtn");
 
-    async function sleep(ms) {
-      return new Promise(r => setTimeout(r, ms));
+    const IMG_NORMAL = "images/normal.png";
+    const IMG_SURPRISED = "images/surprised.png";
+    const IMG_SMILE = "images/smile.png";
+
+    let charX;               // 画面上のキャラX座標（px）
+    let direction = 1;       // 1: 右, -1: 左
+    let speed = 1.2;         // 1フレームあたりの移動量(px)
+    let turnCount = 0;       // 何回折り返したか
+    let animRunning = true;  // タイトル演出中フラグ
+
+    // 画面サイズに応じて安全な移動範囲を決める
+    function getBounds() {
+      const w = window.innerWidth;
+      const charWidth = charImg.getBoundingClientRect().width || 200;
+      const margin = 24; // 画面端から少し余白
+
+      const minX = margin + charWidth / 2;
+      const maxX = w - margin - charWidth / 2;
+      return { minX, maxX };
     }
 
-    async function startAnimation() {
-
-      // ① 右へ移動
-      char.style.transform = "translateX(30%)";
-      await sleep(800);
-
-      // ② 左へ移動（反転）
-      char.classList.add("flip");
-      char.style.transform = "translateX(-130%)";
-      await sleep(800);
-
-      // ③ 中央へ戻る（反転解除）
-      char.classList.remove("flip");
-      char.style.transform = "translateX(-50%)";
-      await sleep(700);
-
-      // ④ 芋を落とす
-      imo.style.display = "block";
-      await sleep(50);
-      imo.style.top = "350px"; // キャラの頭あたり
-      await sleep(900);
-
-      // ⑤ キャッチ → 表情変化
-      char.src = "images/surprised.png";
-      await sleep(600);
-      char.src = "images/smirk.png";
-
-      // ⑥ Startボタン表示
-      startBtn.style.display = "block";
+    function setCharPosition(x) {
+      charImg.style.left = x + "px";
     }
 
-    startAnimation();
+    // タイトル用 左右移動アニメーション
+    function moveCharacter() {
+      if (!animRunning) return;
 
-    // ボタン → ゲームへ
+      const { minX, maxX } = getBounds();
+
+      charX += direction * speed;
+
+      // はみ出さないようにクランプ
+      if (charX < minX) {
+        charX = minX;
+        direction = 1;
+        turnCount++;
+      } else if (charX > maxX) {
+        charX = maxX;
+        direction = -1;
+        turnCount++;
+      }
+
+      setCharPosition(charX);
+
+      // 2往復（=4回折り返し）したら演出を終了して芋を落とす
+      if (turnCount >= 4) {
+        animRunning = false;
+        // 中央付近で止める
+        charX = window.innerWidth / 2;
+        setCharPosition(charX);
+        dropImo();
+        return;
+      }
+
+      requestAnimationFrame(moveCharacter);
+    }
+
+    // 芋を上から落としてカゴにIN → 表情切替 → ボタン表示
+    function dropImo() {
+      const charRect = charImg.getBoundingClientRect();
+
+      // 芋の開始位置（キャラの少し上）
+      let y = -80;
+      imoImg.style.opacity = 1;
+      // 芋のXはキャラの中央に合わせる
+      const charCenterX = charRect.left + charRect.width / 2;
+      imoImg.style.left = charCenterX + "px";
+
+      const basketY = charRect.top + charRect.height * 0.25; // カゴの高さ付近
+
+      function fall() {
+        y += 6; // 落下速度
+
+        imoImg.style.top = y + "px";
+
+        if (y >= basketY) {
+          // カゴに入った扱い
+          // 芋は消す
+          imoImg.style.opacity = 0;
+
+          // 表情：ビックリ → ニヤ
+          charImg.src = IMG_SURPRISED;
+          setTimeout(() => {
+            charImg.src = IMG_SMILE;
+            // スタートボタンを表示
+            startBtn.style.display = "inline-block";
+          }, 450);
+
+          return;
+        }
+
+        requestAnimationFrame(fall);
+      }
+
+      requestAnimationFrame(fall);
+    }
+
+    // スタートボタンでゲーム本編へ
     startBtn.addEventListener("click", () => {
-      location.href = "game.html";
+      // game.html など本編のURLに変更してね
+      window.location.href = "game.html";
+    });
+
+    // 初期配置
+    window.addEventListener("load", () => {
+      // 画面中央からスタート
+      charX = window.innerWidth / 2;
+      setCharPosition(charX);
+
+      // 少し待ってからアニメ開始
+      setTimeout(() => {
+        requestAnimationFrame(moveCharacter);
+      }, 500);
+    });
+
+    // 画面回転などでズレたときの保険
+    window.addEventListener("resize", () => {
+      if (!animRunning) {
+        // 演出終了後はとりあえず中央に戻すだけ
+        charX = window.innerWidth / 2;
+        setCharPosition(charX);
+      }
     });
   </script>
-
 </body>
 </html>
