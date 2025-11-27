@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>めいっ狐のお芋キャッチ - ゲーム本編</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: #000;
+      color: #fff;
+      font-family: "Noto Sans JP", system-ui, -apple-system,
+        BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow: hidden;
+    }
+
+    /* 画面全体のゲームレイヤー */
+    .game-wrap {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #000;
+    }
+
+    /* 背景：縦いっぱい、横はトリミングしてもOK */
+    .bg-game {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      height: 100%;
+      width: auto;
+      z-index: 0;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* 上のスコア・タイム表示帯 */
+    .hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 8px 14px;
+      background: rgba(0, 0, 0, 0.85);
+      color: #fff;
+      font-size: 0.95rem;
+      display: flex;
+      justify-content: space-between;
+      z-index: 10;
+    }
+    .hud span {
+      letter-spacing: 0.15rem;
+    }
+
+    /* キャラ本体 */
+    .character {
+      position: absolute;
+      bottom: 12%;            /* 画面下から少し浮かせる */
+      left: 50%;
+      transform: translateX(-50%); /* 向きはJSで scaleX 切り替え */
+      width: 26vh;            /* 画面の高さ基準で調整 */
+      max-width: 220px;
+      z-index: 5;
+      pointer-events: none;
+      user-select: none;
+      touch-action: none;
+    }
+
+    /* びっくり顔（重ねる用） */
+    .hit-face {
+      position: absolute;
+      bottom: 12%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 26vh;
+      max-width: 220px;
+      z-index: 6;
+      pointer-events: none;
+      user-select: none;
+      touch-action: none;
+      display: none;
+    }
+
+    /* 落下するアイテム（芋＆葉っぱ） */
+    .item {
+      position: absolute;
+      width: 7vh;
+      max-width: 70px;
+      z-index: 4;
+      pointer-events: none;
+      user-select: none;
+      touch-action: none;
+    }
+
+    /* 左右ボタン */
+    .ctrl-btn {
+      position: absolute;
+      bottom: 4%;
+      width: 64px;
+      height: 48px;
+      border-radius: 12px;
+      border: none;
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
+      font-size: 1.6rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 12;
+      cursor: pointer;
+      user-select: none;
+      touch-action: manipulation;
+    }
+    .ctrl-btn.left {
+      left: 6%;
+    }
+    .ctrl-btn.right {
+      right: 6%;
+    }
+    .ctrl-btn:active {
+      background: rgba(255, 131, 183, 0.9);
+    }
+
+    /* スコアがポンッと出るやつ */
+    .float-text {
+      position: absolute;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #ffeb3b;
+      text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+      z-index: 11;
+      pointer-events: none;
+    }
+
+    /* 終了オーバーレイ（とりあえず簡易版） */
+    .finish-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.78);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      text-align: center;
+      padding: 16px;
+      display: none; /* 完了時に表示 */
+    }
+    .finish-overlay h2 {
+      font-size: 1.6rem;
+      margin-bottom: 8px;
+    }
+    .finish-overlay p {
+      margin-bottom: 16px;
+    }
+    .finish-overlay button {
+      padding: 8px 26px;
+      border-radius: 999px;
+      border: none;
+      background: #ff83b7;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-wrap">
+    <!-- 背景 -->
+    <img src="images/game_bg.png" alt="背景" class="bg-game" />
+
+    <!-- スコア＆タイム -->
+    <div class="hud">
+      <span id="scoreText">SCORE: 0</span>
+      <span id="timeText">TIME: 60</span>
+    </div>
+
+    <!-- キャラ -->
+    <img
+      id="character"
+      src="images/normal.png"
+      alt="めいっ狐"
+      class="character"
+    />
+    <!-- ヒット時の顔 -->
+    <img
+      id="hitFace"
+      src="images/surprised_bad.png"
+      alt="びっくり顔"
+      class="hit-face"
+    />
+
+    <!-- 左右移動ボタン -->
+    <button class="ctrl-btn left" id="btnLeft">＜</button>
+    <button class="ctrl-btn right" id="btnRight">＞</button>
+
+    <!-- 終了オーバーレイ -->
+    <div class="finish-overlay" id="finishOverlay">
+      <h2>おつかれさま！</h2>
+      <p id="finalScore">SCORE: 0</p>
+      <button id="backTitle">タイトルへ</button>
+    </div>
+  </div>
+
+  <script>
+    const GAME_TIME = 60; // 秒
+    const SPAWN_INTERVAL = 900; // アイテム出現間隔(ms)
+    const FALL_SPEED = 4; // アイテム落下速度(px/frame)
+    const MOVE_SPEED = 6; // キャラ移動速度(px/frame)
+    const HIT_FREEZE_TIME = 500; // ぶつかった時のフリーズ時間(ms)
+
+    const charImg = document.getElementById("character");
+    const hitFace = document.getElementById("hitFace");
+    const btnLeft = document.getElementById("btnLeft");
+    const btnRight = document.getElementById("btnRight");
+    const scoreText = document.getElementById("scoreText");
+    const timeText = document.getElementById("timeText");
+    const finishOverlay = document.getElementById("finishOverlay");
+    const finalScore = document.getElementById("finalScore");
+    const backTitle = document.getElementById("backTitle");
+
+    const WRAP = document.querySelector(".game-wrap");
+
+    const IMG_CHAR_NORMAL = "images/normal.png";
+    const IMG_CHAR_HIT = "images/surprised_bad.png";
+    const IMG_ITEM_NORMAL = "images/imo_normal.png";
+    const IMG_ITEM_GOLD = "images/imo_gold.png";
+    const IMG_ITEM_BAD = "images/leaf_bad.png"; // ★ここ leaf_bad に修正
+
+    let score = 0;
+    let timeLeft = GAME_TIME;
+
+    // キャラのX座標(画面上の中心px座標)
+    let charX = window.innerWidth / 2;
+    let moveDir = 0; // -1: 左 / 0: 停止 / 1: 右
+    let canMove = true;
+
+    // 落下中のアイテムたち
+    const items = [];
+
+    let lastSpawnTime = 0;
+    let lastFrameTime = 0;
+    let timerId = null;
+    let gameFinished = false;
+
+    function updateHud() {
+      scoreText.textContent = "SCORE: " + score;
+      timeText.textContent = "TIME: " + timeLeft;
+    }
+
+    function setCharacterX(x) {
+      const rect = charImg.getBoundingClientRect();
+      const charWidth = rect.width || 200;
+      const margin = 10;
+      const minX = margin + charWidth / 2;
+      const maxX = window.innerWidth - margin - charWidth / 2;
+
+      charX = Math.max(minX, Math.min(maxX, x));
+
+      charImg.style.left = charX + "px";
+      hitFace.style.left = charX + "px";
+    }
+
+    function setCharacterDirection(dir) {
+      // dir: -1 / 0 / 1
+      if (dir < 0) {
+        charImg.style.transform = "translateX(-50%) scaleX(-1)";
+        hitFace.style.transform = "translateX(-50%) scaleX(-1)";
+      } else {
+        // 右向き or 正面は右向き扱い
+        charImg.style.transform = "translateX(-50%) scaleX(1)";
+        hitFace.style.transform = "translateX(-50%) scaleX(1)";
+      }
+    }
+
+    // アイテム生成
+    function spawnItem() {
+      const w = window.innerWidth;
+      const margin = w * 0.1;
+      const x = margin + Math.random() * (w - margin * 2);
+
+      const r = Math.random();
+      let type = "normal";
+      let imgSrc = IMG_ITEM_NORMAL;
+      if (r < 0.15) {
+        type = "gold";
+        imgSrc = IMG_ITEM_GOLD;
+      } else if (r < 0.35) {
+        type = "bad";
+        imgSrc = IMG_ITEM_BAD;
+      }
+
+      const el = document.createElement("img");
+      el.className = "item";
+      el.src = imgSrc;
+      el.style.left = x + "px";
+      el.style.top = "-80px";
+
+      WRAP.appendChild(el);
+
+      items.push({
+        el,
+        x,
+        y: -80,
+        vy: FALL_SPEED,
+        type,
+      });
+    }
+
+    // スコア+1 / +5ポップ表示
+    function showFloatText(text, x, y, color) {
+      const ft = document.createElement("div");
+      ft.className = "float-text";
+      ft.textContent = text;
+      ft.style.left = x + "px";
+      ft.style.top = y + "px";
+      ft.style.color = color || "#ffeb3b";
+      WRAP.appendChild(ft);
+
+      let life = 700; // ms
+      const start = performance.now();
+
+      function anim(t) {
+        const elapsed = t - start;
+        const p = elapsed / life;
+        if (p >= 1) {
+          WRAP.removeChild(ft);
+          return;
+        }
+        ft.style.transform = `translateY(${-30 * p}px)`;
+        ft.style.opacity = 1 - p;
+        requestAnimationFrame(anim);
+      }
+      requestAnimationFrame(anim);
+    }
+
+    // アイテムの落下＆当たり判定
+    function updateItems() {
+      const charRect = charImg.getBoundingClientRect();
+      const charCenterX = charRect.left + charRect.width / 2;
+      const basketY = charRect.top + charRect.height * 0.25;
+
+      for (let i = items.length - 1; i >= 0; i--) {
+        const item = items[i];
+        item.y += item.vy;
+        item.el.style.top = item.y + "px";
+
+        const itemRect = item.el.getBoundingClientRect();
+        const itemCenterX = itemRect.left + itemRect.width / 2;
+        const itemBottomY = itemRect.bottom;
+
+        // キャッチ判定（縦位置＆横位置が近い）
+        const dx = Math.abs(itemCenterX - charCenterX);
+        const dy = Math.abs(itemBottomY - basketY);
+
+        if (dy < 40 && dx < 40) {
+          // キャッチ or 被弾
+          if (item.type === "normal") {
+            score += 1;
+            showFloatText("+1", itemCenterX, basketY, "#ffd54f");
+          } else if (item.type === "gold") {
+            score += 5;
+            showFloatText("+5", itemCenterX, basketY, "#ffeb3b");
+          } else if (item.type === "bad") {
+            // びっくり顔＆動き停止
+            triggerHit();
+            showFloatText("!!", itemCenterX, basketY, "#ff80ab");
+          }
+
+          updateHud();
+          // アイテム消す
+          WRAP.removeChild(item.el);
+          items.splice(i, 1);
+          continue;
+        }
+
+        // 画面外まで落ちたら消す
+        if (item.y > window.innerHeight + 100) {
+          WRAP.removeChild(item.el);
+          items.splice(i, 1);
+        }
+      }
+    }
+
+    // 被弾演出
+    function triggerHit() {
+      if (!canMove) return; // 連続ヒット防止
+      canMove = false;
+
+      charImg.style.opacity = 0;
+      hitFace.style.display = "block";
+
+      setTimeout(() => {
+        charImg.style.opacity = 1;
+        hitFace.style.display = "none";
+        canMove = true;
+      }, HIT_FREEZE_TIME);
+    }
+
+    // メインループ（キャラ移動＆アイテム更新）
+    function gameLoop(timestamp) {
+      if (gameFinished) return;
+
+      if (!lastFrameTime) lastFrameTime = timestamp;
+      const delta = timestamp - lastFrameTime;
+      lastFrameTime = timestamp;
+
+      // キャラ移動
+      if (canMove && moveDir !== 0) {
+        setCharacterDirection(moveDir);
+        const movePx = MOVE_SPEED; // delta無視でも十分
+        setCharacterX(charX + moveDir * movePx);
+      }
+
+      // アイテム更新
+      updateItems();
+
+      // アイテム生成タイミング
+      if (!lastSpawnTime) lastSpawnTime = timestamp;
+      if (timestamp - lastSpawnTime > SPAWN_INTERVAL) {
+        spawnItem();
+        lastSpawnTime = timestamp;
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // ゲーム終了
+    function finishGame() {
+      gameFinished = true;
+      if (timerId) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+      // 終了オーバーレイ表示
+      finalScore.textContent = "SCORE: " + score;
+      finishOverlay.style.display = "flex";
+    }
+
+    // イベント設定
+    function setupControls() {
+      btnLeft.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        moveDir = -1;
+      });
+      btnRight.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        moveDir = 1;
+      });
+      btnLeft.addEventListener("touchend", () => {
+        moveDir = 0;
+      });
+      btnRight.addEventListener("touchend", () => {
+        moveDir = 0;
+      });
+
+      // PC用に click / mousedown も一応
+      btnLeft.addEventListener("mousedown", () => {
+        moveDir = -1;
+      });
+      btnRight.addEventListener("mousedown", () => {
+        moveDir = 1;
+      });
+      window.addEventListener("mouseup", () => {
+        moveDir = 0;
+      });
+
+      // 画面左右タップでも動かせるようにしてもOK（必要なら追記）
+    }
+
+    // タイマー
+    function startTimer() {
+      timerId = setInterval(() => {
+        if (timeLeft <= 0) {
+          timeLeft = 0;
+          updateHud();
+          finishGame();
+          return;
+        }
+        timeLeft -= 1;
+        updateHud();
+      }, 1000);
+    }
+
+    // 初期化
+    window.addEventListener("load", () => {
+      // キャラ初期位置（中央）
+      setCharacterX(window.innerWidth / 2);
+      setCharacterDirection(1);
+      updateHud();
+      setupControls();
+      startTimer();
+      requestAnimationFrame(gameLoop);
+    });
+
+    // 画面回転など
+    window.addEventListener("resize", () => {
+      setCharacterX(charX);
+    });
+
+    // 終了画面のボタン（タイトルへ戻る）
+    backTitle.addEventListener("click", () => {
+      // ★ タイトルのファイル名に合わせて変更してね
+      window.location.href = "index.html";
+    });
+  </script>
+</body>
+</html>
