@@ -179,6 +179,11 @@
       background: #fff;
       color: #333;
     }
+    
+    /* キャラ反転用クラス */
+.flipH {
+  transform: translateX(-50%) scaleX(-1);
+}
   </style>
 </head>
 <body>
@@ -210,8 +215,8 @@
         <img src="images/clear_bg.png" alt="クリア画像" />
         <div class="result-score" id="resultScore">score 0000</div>
         <div class="result-buttons">
-          <button class="btn-retry" id="btnRetry">おかわり♪</button>
-          <button class="btn-title" id="btnTitle">タイトルへ</button>
+          <button class="btn-retry" id="btnRetry">🍠おかわり♪</button>
+          <button class="btn-title" id="btnTitle">たいとるへ♪</button>
         </div>
       </div>
     </div>
@@ -546,12 +551,21 @@
      * 入力処理（左右ボタン）
      **********************************************/
     function setMoveDir(dir) {
-      if (isStunned) {
-        moveDir = 0;
-      } else {
-        moveDir = dir;
-      }
-    }
+  if (isStunned) {
+    moveDir = 0;
+    return;
+  }
+
+  moveDir = dir;
+
+  if (dir < 0) {
+    // ← 左向き
+    charImg.classList.add("flipH");
+  } else if (dir > 0) {
+    // → 右向き
+    charImg.classList.remove("flipH");
+  }
+}
 
     function setupButtonHold(btn, dir) {
       // マウス
