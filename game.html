@@ -206,7 +206,7 @@
     <!-- 結果画面 -->
     <div class="result-overlay" id="resultOverlay">
       <div class="result-card">
-        <img src="images/clear.png" alt="クリア画像" />
+        <img src="images/clear_bg.png" alt="クリア画像" />
         <div class="result-score" id="resultScore">score 0000</div>
         <div class="result-buttons">
           <button class="btn-retry" id="btnRetry">もう一回</button>
@@ -391,7 +391,7 @@
 
       const rect = charImg.getBoundingClientRect();
       const charWidth = rect.width || 200;
-      const margin = 0;
+      const margin = -40;
       const minX = margin + charWidth / 2;
       const maxX = window.innerWidth - margin - charWidth / 2;
 
