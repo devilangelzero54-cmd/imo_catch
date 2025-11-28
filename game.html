@@ -70,7 +70,7 @@
     /* キャラ */
     .character {
       position: absolute;
-      bottom: 14%;        /* 背景の中で少し上に浮かせる */
+      bottom: 16%;        /* 背景の中で少し上に浮かせる */
       left: 50%;
       transform: translateX(-50%);
       width: 28vh;        /* ゲーム用はタイトルより小さめ */
@@ -84,7 +84,7 @@
     /* 左右ボタン */
     .ctrl-btn {
       position: absolute;
-      bottom: 8%;
+      bottom: 10%;
       width: 64px;
       height: 48px;
       border-radius: 12px;
@@ -391,7 +391,7 @@
 
       const rect = charImg.getBoundingClientRect();
       const charWidth = rect.width || 200;
-      const margin = 24;
+      const margin = 0;
       const minX = margin + charWidth / 2;
       const maxX = window.innerWidth - margin - charWidth / 2;
 
